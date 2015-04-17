@@ -1,3 +1,4 @@
+---
 ### Runbook to fix sssd
 
 - name: check if /var/lib/sss/db is a symlink
