@@ -1,0 +1,25 @@
+### Runbook to fix sssd
+
+- name: check if /var/lib/sss/db is a symlink
+  stat: path=/var/lib/sss/db
+  register: sss_symlink
+
+- name: remove the symlink if it exists
+  file: path=/var/lib/sss/db state=absent
+  when: sss_symlink.stat.islnk is defined and sss_symlink.stat.islnk
+
+- name: recreate the directory /var/lib/sss/db
+  file: path=/var/lib/sss/db state=directory
+
+#look for mkdir -p /dev/shm/db in /etc/rc.local and remove if present
+- lineinfile: dest=/etc/rc.local state=absent regexp="mkdir -p /dev/shm/db"
+  ignore_errors: yes
+
+#name: look for the call to restart sssd in /etc/rc.local
+- lineinfile: dest=/etc/rc.local state=absent regexp="service sssd restart"
+  ignore_errors: yes
+
+#create the tmpfs mount point in /var/lib/sss/db and mount it if not present
+- mount: src=tmpfs name=/var/lib/sss/db fstype=tmpfs opts="defaults,size=128m" dump=0 passno=0 state=mounted
+  notify: restart sssd
+
